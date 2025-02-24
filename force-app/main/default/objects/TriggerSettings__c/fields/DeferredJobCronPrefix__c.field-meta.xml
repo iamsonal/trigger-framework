@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>DeferredJobCronPrefix__c</fullName>
+    <description>This field defines the prefix for scheduled deferred jobs. If not set, the system will use the default value (ProcessDeferredJobs_) defined in the DeferredJobProcessor class.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Prefix used when scheduling deferred jobs via the cron scheduler.</inlineHelpText>
+    <label>Deferred Job Cron Prefix</label>
+    <length>255</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

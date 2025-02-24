@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Handler__c</fullName>
+    <description>Apex class name that implements the business logic for this trigger feature.</description>
+    <externalId>false</externalId>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Enter the fully qualified Apex class name (e.g., &apos;AccountValidationHandler&apos;). The class must implement the ITriggerExecutable interface.</inlineHelpText>
+    <label>Handler</label>
+    <length>255</length>
+    <required>true</required>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsActive__c</fullName>
+    <defaultValue>true</defaultValue>
+    <description>Activates or deactivates this trigger feature. Uncheck to disable the business logic without deleting the configuration.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>When checked, the associated trigger handler will execute during the specified trigger events. Use this to temporarily disable features (e.g., during data migrations) while retaining their configuration. Best Practice: Deactivate instead of deleting to preserve historical metadata.</inlineHelpText>
+    <label>Is Active</label>
+    <type>Checkbox</type>
+</CustomField>

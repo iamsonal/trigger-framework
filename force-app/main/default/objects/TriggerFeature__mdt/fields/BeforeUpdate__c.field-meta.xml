@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>BeforeUpdate__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Runs this handler in &quot;before update&quot; context.</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>Runs the handler in &quot;before update&quot; context.</inlineHelpText>
+    <label>Before Update</label>
+    <type>Checkbox</type>
+</CustomField>

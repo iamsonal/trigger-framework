@@ -1,0 +1,11 @@
+.sf/
+.sfdx/
+.localdev/
+/IlluminatedCloud/
+/out/
+target/
+node_modules/
+/.idea/
+/.illuminatedCloud/
+**/tsconfig*.json
+**/*.tsbuildinfo

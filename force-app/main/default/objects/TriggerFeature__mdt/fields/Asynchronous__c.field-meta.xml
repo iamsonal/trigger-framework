@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Asynchronous__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Executes the trigger handler asynchronously (queued in a separate transaction).</description>
+    <fieldManageability>DeveloperControlled</fieldManageability>
+    <inlineHelpText>When enabled, the handler will run via Salesforce Queueable Apex, freeing up trigger runtime limits. Use this for non-urgent logic, callouts, or operations requiring higher governor limits.</inlineHelpText>
+    <label>Asynchronous</label>
+    <type>Checkbox</type>
+</CustomField>

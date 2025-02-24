@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>IsDisabled__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>If set to true, triggers for this SObject will not execute, effectively disabling automation for records of this type.</description>
+    <inlineHelpText>Indicates whether the trigger execution for this SObject is disabled.</inlineHelpText>
+    <label>Disabled</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>
