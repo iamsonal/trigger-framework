@@ -169,23 +169,9 @@ The deferred job processing feature:
 - Processes these jobs later when queueable slots become available
 - Maintains the execution context needed for proper processing
 
-To set up the processor:
+Schedule the processor to run every `n` minutes.
 
-```apex
-// Schedule the processor to run every 5 minutes
-DeferredJobProcessor processor = new DeferredJobProcessor();
-String cronExp = '0 0,5,10,15,20,25,30,35,40,45,50,55 * * * ?';
-System.schedule('Process Deferred Jobs', cronExp, processor);
-```
-
-You can customize the processing interval in the `TriggerSettings__c` custom setting:
-
-```apex
-TriggerSettings__c settings = TriggerSettings__c.getInstance();
-settings.MinimumScheduleIntervalMinutes__c = 5; // Process every 5 minutes
-settings.DeferredJobCronPrefix__c = 'ProcessDeferredJobs_';
-upsert settings;
-```
+You can customize the processing interval in the `TriggerSettings__c` custom setting.
 
 ### Bypass and Required Permissions
 
@@ -204,13 +190,7 @@ This feature is useful for:
 
 ### Performance Metrics
 
-The framework includes built-in performance tracking to help identify bottlenecks. To enable this feature:
-
-```apex
-TriggerSettings__c settings = TriggerSettings__c.getInstance();
-settings.IsMetricsEnabled__c = true;
-upsert settings;
-```
+The framework includes built-in performance tracking to help identify bottlenecks. Enable this feature in the `TriggerSettings__c` custom setting.
 
 Once enabled, the framework will log detailed metrics to the `TriggerMetric__c` object for each trigger handler execution, including:
 - Execution time in milliseconds
@@ -227,15 +207,7 @@ You can use this data to:
 
 ### Disabling Triggers
 
-You can disable triggers for specific objects using the `SObjectTriggerControl__c` custom setting:
-
-```apex
-SObjectTriggerControl__c control = new SObjectTriggerControl__c();
-control.Name = 'Account';
-control.SObjectName__c = 'Account';
-control.IsDisabled__c = true;
-insert control;
-```
+You can disable triggers for specific objects using the `SObjectTriggerControl__c` custom setting.
 
 This completely bypasses all trigger processing for the specified object, which is useful during:
 - Data migrations
