@@ -4,24 +4,16 @@
 1. [Introduction](#introduction)
 2. [Framework Overview](#framework-overview)
 3. [Key Components](#key-components)
-   - [ITriggerExecutable](#itriggerexecutable)
-   - [TriggerContext](#triggercontext)
-   - [TriggerDispatcher](#triggerdispatcher)
-   - [TriggerFeature__mdt](#triggerfeaturemdt)
-   - [DeferredJobProcessor](#deferredjobprocessor)
-   - [TriggerMetrics](#triggermetrics)
-   - [Custom Settings](#custom-settings)
 4. [Implementation Guide](#implementation-guide)
-   - [Step 1: Create Custom Metadata Type](#step-1-create-custom-metadata-type)
-   - [Step 2: Configure Custom Settings](#step-2-configure-custom-settings)
-   - [Step 3: Implement ITriggerExecutable](#step-3-implement-itriggerexecutable)
-   - [Step 4: Configure Trigger Features](#step-4-configure-trigger-features)
-   - [Step 5: Implement Trigger](#step-5-implement-trigger)
+   - [Step 1: Implement Trigger](#step-1-implement-trigger)
+   - [Step 2: Implement ITriggerExecutable](#step-2-implement-itriggerexecutable)
+   - [Step 3: Configure Trigger Features](#step-3-configure-trigger-features)
 5. [Advanced Features](#advanced-features)
    - [Asynchronous Execution](#asynchronous-execution)
    - [Deferred Job Processing](#deferred-job-processing)
    - [Bypass and Required Permissions](#bypass-and-required-permissions)
    - [Performance Metrics](#performance-metrics)
+   - [Disabling Triggers](#disabling-triggers)
 6. [Best Practices](#best-practices)
 7. [Troubleshooting](#troubleshooting)
 8. [Examples](#examples)
@@ -29,6 +21,7 @@
    - [Multiple Handlers](#multiple-handlers)
    - [Asynchronous Handler](#asynchronous-handler)
    - [Working with Context Methods](#working-with-context-methods)
+   - [Nested Handler Classes](#nested-handler-classes)
 
 ## Introduction
 
@@ -47,137 +40,30 @@ The framework is built on the following key principles:
 
 ## Key Components
 
-### ITriggerExecutable
+The framework consists of several components that work together:
 
-The `ITriggerExecutable` interface defines the contract for all trigger handlers. Any class implementing this interface can be used as a trigger handler in the framework.
-
-```apex
-public interface ITriggerExecutable {
-    void execute(TriggerContext context);
-}
-```
-
-### TriggerContext
-
-The `TriggerContext` class encapsulates all relevant information about the current trigger execution, including:
-
-- Trigger operation (insert, update, delete, undelete)
-- Trigger phase (before, after)
-- Old and new record lists and maps
-- Helper methods for common trigger operations
-- Support for synchronous and asynchronous execution modes
-
-Key methods:
-- `getRecords()`: Returns the relevant list of records for the current operation
-- `getRecordIds()`: Returns the set of record IDs involved in the operation
-- `isChanged(SObject record, Schema.SObjectField field)`: Checks if a specific field has changed
-- Helper methods for each trigger context: `beforeInsert()`, `afterUpdate()`, etc.
-
-### TriggerDispatcher
-
-The `TriggerDispatcher` class is the core of the framework. It handles the execution of trigger logic based on the configured trigger features.
-
-Key responsibilities:
-- Fetches and caches trigger feature configurations
-- Determines which handlers to execute based on the current trigger context
-- Manages synchronous and asynchronous execution of handlers
-- Creates deferred jobs when queueable limits are reached
-- Handles error scenarios and permissions
-
-### TriggerFeature__mdt
-
-This custom metadata type stores the configuration for each trigger feature, including:
-
-- Handler class name
-- Enabled trigger events (before insert, after update, etc.)
-- Execution order
-- Asynchronous execution flag
-- Bypass and required permissions
-
-### DeferredJobProcessor
-
-The `DeferredJobProcessor` class processes jobs that were deferred due to queueable limits:
-
-- Implements both `Schedulable` and `Queueable` interfaces
-- Processes deferred jobs in batches
-- Automatically schedules itself for future execution
-- Uses custom settings for configuration
-
-### TriggerMetrics
-
-The `TriggerMetrics` class provides functionality to track and log performance metrics for trigger executions, helping identify potential performance issues:
-
-- Tracks CPU time, DML rows, query rows, and execution time
-- Supports buffer-based logging to minimize DML operations
-- Configurable via custom settings
-
-### Custom Settings
-
-The framework uses two custom settings:
-
-1. **TriggerSettings__c**:
-   - `IsMetricsEnabled__c`: Controls whether performance metrics are collected
-   - `MinimumScheduleIntervalMinutes__c`: Controls how frequently the DeferredJobProcessor runs
-   - `DeferredJobCronPrefix__c`: Prefix for scheduled job names
-
-2. **SObjectTriggerControl__c**:
-   - `SObjectName__c`: API name of the SObject
-   - `IsDisabled__c`: Whether triggers are disabled for this SObject
+- **Trigger Handler Interface**: Defines the contract for all trigger handlers
+- **Trigger Context**: Encapsulates all trigger execution information
+- **Trigger Dispatcher**: Central component that manages trigger execution
+- **Custom Metadata**: Configures which handlers run for each object and event
+- **Performance Metrics**: Tracks execution times and resource usage
+- **Deferred Processing**: Handles jobs that exceed governor limits
 
 ## Implementation Guide
 
-### Step 1: Create Custom Metadata Type
+### Step 1: Implement Trigger
 
-Create a custom metadata type named `TriggerFeature__mdt` with the following fields:
+Create a trigger for your object that calls the `TriggerDispatcher`:
 
-- `DeveloperName` (Text)
-- `Handler__c` (Text): Full class name of the handler
-- `IsActive__c` (Checkbox): Whether this feature is active
-- `LoadOrder__c` (Number): Order of execution (lower numbers execute first)
-- `BeforeInsert__c` (Checkbox): Run on before insert
-- `AfterInsert__c` (Checkbox): Run on after insert
-- `BeforeUpdate__c` (Checkbox): Run on before update
-- `AfterUpdate__c` (Checkbox): Run on after update
-- `BeforeDelete__c` (Checkbox): Run on before delete
-- `AfterDelete__c` (Checkbox): Run on after delete
-- `AfterUndelete__c` (Checkbox): Run on after undelete
-- `Asynchronous__c` (Checkbox): Run asynchronously (only for after triggers)
-- `SObjectName__c` (Text): API name of the object
-- `BypassPermission__c` (Text): Custom permission that allows bypassing this trigger
-- `RequiredPermission__c` (Text): Custom permission required to run this trigger
+```apex
+trigger AccountTrigger on Account (before insert, after insert, before update, after update, before delete, after delete, after undelete) {
+    TriggerDispatcher.run(Account.SObjectType);
+}
+```
 
-### Step 2: Configure Custom Settings
+This simple trigger delegates all processing to the framework. There's no need to write any logic directly in the trigger file.
 
-1. Create a custom setting named `TriggerSettings__c` with the following fields:
-   - `IsMetricsEnabled__c` (Checkbox): Enable performance metrics
-   - `MinimumScheduleIntervalMinutes__c` (Number): Minimum interval for scheduled jobs
-   - `DeferredJobCronPrefix__c` (Text): Prefix for scheduled job names
-
-2. Create a custom setting named `SObjectTriggerControl__c` with the following fields:
-   - `SObjectName__c` (Text): API name of the SObject
-   - `IsDisabled__c` (Checkbox): Whether triggers are disabled for this SObject
-
-3. Create a custom object named `DeferredQueueableJob__c` with the following fields:
-   - `HandlerName__c` (Text): Handler class name
-   - `ContextData__c` (Long Text Area): Serialized context data
-   - `Status__c` (Picklist): Pending, Processed
-   - `Operation__c` (Text): Trigger operation
-   - `SObjectName__c` (Text): SObject name
-   - `LastProcessedDate__c` (DateTime): When the job was last processed
-
-4. Create a custom object named `TriggerMetric__c` with the following fields:
-   - `Handler__c` (Text): Handler class name
-   - `Operation__c` (Text): Trigger operation
-   - `SObjectType__c` (Text): SObject type
-   - `RecordCount__c` (Number): Number of records processed
-   - `StartTime__c` (DateTime): Start time
-   - `EndTime__c` (DateTime): End time
-   - `ExecutionTime__c` (Number): Execution time in milliseconds
-   - `CPUTime__c` (Number): CPU time consumed
-   - `DMLRows__c` (Number): DML rows consumed
-   - `QueryRows__c` (Number): Query rows consumed
-
-### Step 3: Implement ITriggerExecutable
+### Step 2: Implement ITriggerExecutable
 
 Create a class that implements the `ITriggerExecutable` interface for each piece of trigger logic you want to execute:
 
@@ -214,7 +100,12 @@ public class AccountTriggerHandler implements ITriggerExecutable {
 }
 ```
 
-### Step 4: Configure Trigger Features
+The `TriggerContext` object provides helpful methods to:
+- Determine the current trigger operation (`beforeInsert()`, `afterUpdate()`, etc.)
+- Access records being processed (`getRecords()`)
+- Check if fields have changed (`isChanged()`)
+
+### Step 3: Configure Trigger Features
 
 Create `TriggerFeature__mdt` records for each trigger handler:
 
@@ -232,15 +123,11 @@ Create `TriggerFeature__mdt` records for each trigger handler:
    - Asynchronous__c: Check if this should run asynchronously (only for after triggers)
 5. Save the record
 
-### Step 5: Implement Trigger
-
-Create a trigger for your object that calls the `TriggerDispatcher`:
-
-```apex
-trigger AccountTrigger on Account (before insert, after insert, before update, after update, before delete, after delete, after undelete) {
-    TriggerDispatcher.run(Account.SObjectType);
-}
-```
+This metadata-driven approach allows you to:
+- Enable/disable handlers without code changes
+- Control which trigger events each handler responds to
+- Define the order of execution when multiple handlers exist
+- Configure asynchronous execution for specific handlers
 
 ## Advanced Features
 
@@ -275,26 +162,34 @@ public class AsyncAccountHandler implements ITriggerExecutable {
 
 ### Deferred Job Processing
 
-When queueable limits are reached, the framework automatically creates `DeferredQueueableJob__c` records:
+When queueable limits are reached during trigger processing, the framework automatically creates `DeferredQueueableJob__c` records for later processing. This is particularly useful in high-volume scenarios where you might hit the limit of 50 queueable jobs in a transaction.
 
-1. To set up the processor, schedule it in Setup:
+The deferred job processing feature:
+- Automatically creates records for jobs that can't be executed immediately
+- Processes these jobs later when queueable slots become available
+- Maintains the execution context needed for proper processing
+
+To set up the processor:
+
 ```apex
+// Schedule the processor to run every 5 minutes
 DeferredJobProcessor processor = new DeferredJobProcessor();
-String cronExp = '0 0 * * * ?'; // Run every hour
+String cronExp = '0 0,5,10,15,20,25,30,35,40,45,50,55 * * * ?';
 System.schedule('Process Deferred Jobs', cronExp, processor);
 ```
 
-2. Customize the processing intervals in `TriggerSettings__c`:
+You can customize the processing interval in the `TriggerSettings__c` custom setting:
+
 ```apex
 TriggerSettings__c settings = TriggerSettings__c.getInstance();
-settings.MinimumScheduleIntervalMinutes__c = 15; // Process every 15 minutes
+settings.MinimumScheduleIntervalMinutes__c = 5; // Process every 5 minutes
 settings.DeferredJobCronPrefix__c = 'ProcessDeferredJobs_';
 upsert settings;
 ```
 
 ### Bypass and Required Permissions
 
-Use the `BypassPermission__c` and `RequiredPermission__c` fields in `TriggerFeature__mdt` to control execution based on custom permissions:
+You can control trigger execution based on custom permissions:
 
 1. Create custom permissions in Setup
 2. Assign them to permission sets
@@ -302,9 +197,14 @@ Use the `BypassPermission__c` and `RequiredPermission__c` fields in `TriggerFeat
    - `BypassPermission__c`: If the user has this permission, the handler will not execute
    - `RequiredPermission__c`: The user must have this permission for the handler to execute
 
+This feature is useful for:
+- Allowing administrators to bypass triggers during data loads
+- Restricting certain trigger functionality to specific user groups
+- Implementing feature toggles based on permissions
+
 ### Performance Metrics
 
-Enable performance tracking via the custom setting:
+The framework includes built-in performance tracking to help identify bottlenecks. To enable this feature:
 
 ```apex
 TriggerSettings__c settings = TriggerSettings__c.getInstance();
@@ -312,11 +212,36 @@ settings.IsMetricsEnabled__c = true;
 upsert settings;
 ```
 
-This will log detailed metrics to the `TriggerMetric__c` object, including:
-- Execution time
-- CPU time
-- DML rows
-- Query rows
+Once enabled, the framework will log detailed metrics to the `TriggerMetric__c` object for each trigger handler execution, including:
+- Execution time in milliseconds
+- CPU time consumed
+- DML rows used
+- Query rows used
+- Number of records processed
+
+You can use this data to:
+- Identify slow-performing trigger handlers
+- Monitor resource usage
+- Optimize code based on performance metrics
+- Track execution patterns over time
+
+### Disabling Triggers
+
+You can disable triggers for specific objects using the `SObjectTriggerControl__c` custom setting:
+
+```apex
+SObjectTriggerControl__c control = new SObjectTriggerControl__c();
+control.Name = 'Account';
+control.SObjectName__c = 'Account';
+control.IsDisabled__c = true;
+insert control;
+```
+
+This completely bypasses all trigger processing for the specified object, which is useful during:
+- Data migrations
+- Bulk operations
+- Testing
+- Troubleshooting
 
 ## Best Practices
 
@@ -513,3 +438,46 @@ public class OpportunityProcessor implements ITriggerExecutable {
     }
 }
 ```
+
+### Nested Handler Classes
+
+You can organize your trigger logic by creating nested handler classes within a main handler class. This approach can help keep related functionality together while still maintaining separation of concerns:
+
+```apex
+public with sharing class AccountTriggerHandler implements ITriggerExecutable {
+    public void execute(TriggerContext context) {
+        if (context.isInsert && context.isBefore) {
+            // Handle before insert logic
+        } else if (context.isUpdate && context.isAfter) {
+            // Handle after update logic
+        }
+        // Add more conditions as needed
+    }
+    
+    public class UpdateDescription implements ITriggerExecutable {
+        public void execute(TriggerContext context) {
+            for (Account acc : (List<Account>) context.getRecords()) {
+                // Update description logic
+            }
+        }
+    }
+    
+    public class InsertContact implements ITriggerExecutable {
+        public void execute(TriggerContext context) {
+            // Insert related contact logic
+        }
+    }
+}
+```
+
+When configuring these nested handlers in custom metadata, use the full class path:
+- For the main handler: `AccountTriggerHandler`
+- For nested handlers: `AccountTriggerHandler.UpdateDescription` or `AccountTriggerHandler.InsertContact`
+
+This approach offers several benefits:
+- Keeps related functionality organized in a single file
+- Reduces the number of separate class files
+- Makes it easier to understand the relationship between handlers
+- Allows for shared utility methods across handlers
+
+Each nested class can be configured with its own trigger events, load order, and asynchronous settings through separate metadata records.
