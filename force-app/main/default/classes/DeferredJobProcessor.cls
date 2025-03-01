@@ -44,10 +44,10 @@ public with sharing class DeferredJobProcessor implements Schedulable {
             }
 
             try {
-                processJob(job);
+                job.JobId__c = processJob(job);
                 // Mark job as processed
                 job.Status__c = 'Processed';
-                job.LastProcessedDate__c = System.now();
+                job.ProcessedDate__c = System.now();
                 jobsToUpdate.add(job);
             } catch (Exception e) {
                 System.debug(LoggingLevel.ERROR, 'Error processing deferred job ' + job.Id + ': ' + e.getMessage());
@@ -59,14 +59,14 @@ public with sharing class DeferredJobProcessor implements Schedulable {
         }
     }
 
-    private static void processJob(DeferredQueueableJob__c job) {
+    private static Id processJob(DeferredQueueableJob__c job) {
         // Initialize the handler
         ITriggerExecutable handler = TriggerDispatcher.initializeHandlerFromName(job.HandlerName__c);
 
         // Deserialize the context
         TriggerContext asyncContext = (TriggerContext) JSON.deserialize(job.ContextData__c, TriggerContext.class);
 
-        System.enqueueJob(
+        return System.enqueueJob(
             new TriggerDispatcher.AsynchronousFeatureExecution(
                 handler,
                 asyncContext,
