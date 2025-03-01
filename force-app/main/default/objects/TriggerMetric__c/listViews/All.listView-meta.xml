@@ -8,5 +8,10 @@
     <columns>RecordCount__c</columns>
     <columns>ExecutionTime__c</columns>
     <filterScope>Everything</filterScope>
+    <filters>
+        <field>Sequence__c</field>
+        <operation>equals</operation>
+        <value>1</value>
+    </filters>
     <label>All</label>
 </ListView>

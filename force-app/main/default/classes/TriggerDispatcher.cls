@@ -16,7 +16,6 @@ public with sharing class TriggerDispatcher {
     private static Map<String, List<TriggerFeature__mdt>> featureControlsMap = new Map<String, List<TriggerFeature__mdt>>();
     private static Map<String, Boolean> disabledSObjectMap;
 
-
     /**
      * Main entry point. External triggers call this method passing their SObject type.
      */
@@ -50,7 +49,9 @@ public with sharing class TriggerDispatcher {
             }
         }
 
-        TriggerMetrics.flushMetrics();
+        if (syncContext.isAfter) {
+            TriggerMetrics.flushMetrics();
+        }
     }
 
     /**
@@ -109,9 +110,14 @@ public with sharing class TriggerDispatcher {
                 }
             } else {
                 // Synchronous execution
-                TriggerMetrics.startMetrics(control.Handler__c, operation, sObjectName, syncContext.size);
+                String executionId = TriggerMetrics.startMetrics(
+                    control.Handler__c,
+                    operation,
+                    sObjectName,
+                    syncContext.size
+                );
                 handler.execute(syncContext);
-                TriggerMetrics.endMetrics(control.Handler__c, operation, sObjectName);
+                TriggerMetrics.endMetrics(control.Handler__c, operation, sObjectName, executionId);
             }
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'Error in TriggerDispatcher: ' + e.getMessage());
@@ -310,9 +316,13 @@ public with sharing class TriggerDispatcher {
         }
 
         public void execute(System.QueueableContext qc) {
-            TriggerMetrics.startMetrics(handlerName, operation, sObjectName, context.size);
+            String executionId = TriggerMetrics.startMetrics(handlerName, operation, sObjectName, context.size);
             this.handler.execute(this.context);
-            TriggerMetrics.endMetrics(handlerName, operation, sObjectName);
+            TriggerMetrics.endMetrics(handlerName, operation, sObjectName, executionId);
+
+            if (this.context.isAfter) {
+                TriggerMetrics.flushMetrics();
+            }
         }
     }
 
